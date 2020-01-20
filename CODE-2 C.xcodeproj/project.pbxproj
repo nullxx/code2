@@ -14,7 +14,6 @@
 		697486F323D49FB800F6FCF4 /* CODE_2_CTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697486F223D49FB800F6FCF4 /* CODE_2_CTests.swift */; };
 		697486FE23D49FB800F6FCF4 /* CODE_2_CUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697486FD23D49FB800F6FCF4 /* CODE_2_CUITests.swift */; };
 		6974871423D4A48200F6FCF4 /* codeEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6974871323D4A48200F6FCF4 /* codeEditorViewController.swift */; };
-		6974872723D4BBFF00F6FCF4 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 6974872623D4BBFF00F6FCF4 /* main.c */; };
 		6974872A23D4BC2200F6FCF4 /* headers.c in Sources */ = {isa = PBXBuildFile; fileRef = 6974872923D4BC2200F6FCF4 /* headers.c */; };
 		6974872C23D4BF1800F6FCF4 /* json.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6974872B23D4BF1800F6FCF4 /* json.swift */; };
 		6974872E23D4D69E00F6FCF4 /* tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6974872D23D4D69E00F6FCF4 /* tools.swift */; };
@@ -56,7 +55,6 @@
 		6974872323D4BBFF00F6FCF4 /* memoria.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memoria.h; sourceTree = "<group>"; };
 		6974872423D4BBFF00F6FCF4 /* registro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = registro.h; sourceTree = "<group>"; };
 		6974872523D4BBFF00F6FCF4 /* tools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tools.h; sourceTree = "<group>"; };
-		6974872623D4BBFF00F6FCF4 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		6974872823D4BC2200F6FCF4 /* headers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = headers.h; sourceTree = "<group>"; };
 		6974872923D4BC2200F6FCF4 /* headers.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = headers.c; sourceTree = "<group>"; };
 		6974872B23D4BF1800F6FCF4 /* json.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = json.swift; sourceTree = "<group>"; };
@@ -147,7 +145,6 @@
 		6974872223D4BBEA00F6FCF4 /* nullxscript */ = {
 			isa = PBXGroup;
 			children = (
-				6974872623D4BBFF00F6FCF4 /* main.c */,
 				6974872323D4BBFF00F6FCF4 /* memoria.h */,
 				6974872423D4BBFF00F6FCF4 /* registro.h */,
 				6974872523D4BBFF00F6FCF4 /* tools.h */,
@@ -289,7 +286,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				6974872E23D4D69E00F6FCF4 /* tools.swift in Sources */,
-				6974872723D4BBFF00F6FCF4 /* main.c in Sources */,
 				6974871423D4A48200F6FCF4 /* codeEditorViewController.swift in Sources */,
 				697486E223D49FB200F6FCF4 /* ViewController.swift in Sources */,
 				697486E023D49FB200F6FCF4 /* AppDelegate.swift in Sources */,
