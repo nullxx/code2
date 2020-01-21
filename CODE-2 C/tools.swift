@@ -9,6 +9,25 @@
 import Foundation
 import Cocoa
 
+let instruccionesHex = [
+"LD",
+"ST",
+"LLI",
+"LHI",
+"IN",
+"OUT",
+"ADDS",
+"SUBS",
+"NAND",
+"SHL",
+"SHR",
+"SHRA",
+"B-",
+"CALL-",
+"RET",
+"HALT"
+]
+
 func alert(title: String, msg: String) {
     let alert = NSAlert()
     alert.messageText = title
@@ -77,24 +96,99 @@ func search(something: String, ina: Array<String>) -> Int{
 }
 
 func sumar1Hex(hex: String)-> String{
-    let num = Int(hex, radix: 16) ?? 0
+    let num = hexToInt(hex: hex)
     let suma = num+1
-    return String(format:"%04X", suma)
+    return intToHex(num: suma, leading: 4)
 }
 func sumarFromHex(sum1: String, sum2: String)->String{
-    let num1 = Int(sum1, radix: 16) ?? 0
-    let num2 = Int(sum2, radix: 16) ?? 0
+    let num1 = hexToInt(hex: sum1)
+    let num2 = hexToInt(hex: sum2)
     let suma = num1+num2
-    return String(format:"%04X", suma)
+    return intToHex(num: suma, leading: 4)
 }
-extension Substring {
-typealias Byte = UInt8
-var hexaToBytes: [Byte] {
-    var start = startIndex
-    return stride(from: 0, to: count, by: 2).compactMap { _ in   // use flatMap for older Swift versions
-        let end = index(after: start)
-        defer { start = index(after: end) }
-        return Byte(self[start...end], radix: 16)
+func restarFromHex(r1: String, r2: String)->String{
+    let num1 = hexToInt(hex: r1)
+    let num2 = hexToInt(hex: r2)
+    let suma = num1-num2
+    return intToHex(num: suma, leading: 4)
+}
+var memoriaPila = [String]()
+func getLastMemoriaPila()->String{
+    return memoriaPila.popLast() ?? ""
+}
+func insertMemoriaPila(_ new: String){
+    memoriaPila.append(new)
+}
+func intToHex(num: Int, leading: Int)->String{
+    return String(format:"%0\(leading)X", num)
+}
+func hexToInt(hex: String)->Int{
+    return Int(hex, radix: 16) ?? 0
+}
+private func limitString(forS: String, limit: Int, asc: Bool)->String{
+    if (asc){
+        let index = forS.index(forS.startIndex, offsetBy: limit)
+        let mySubstring = forS[..<index] // Hello
+        return String(mySubstring)
+    }else{
+        let index = forS.index(forS.endIndex, offsetBy: -limit)
+        let mySubstring = forS[index...] // Hello
+        return String(mySubstring)
+    }
+}
+func restCeros(text: String, numOfCeros: Int, biestableV: NSButton, biestableC: NSButton) ->String {
+    let count = numOfCeros - text.count
+    if (count < 0){
+        //bidestable acarreo text[0], bidestable overflow true
+        biestableC.state = .on
+        biestableC.state = .on // valor de text[0]
+        return limitString(forS: text, limit: 4, asc: false)
+    }
+    return String(repeating: "0", count: count) + text
+}
+func binToHex(bin : String) -> String {
+    let num = bin.withCString { strtoul($0, nil, 2) }
+    let hex = String(num, radix: 16, uppercase: true) 
+    return hex
+}
+func getBiActivated(biestableV: NSButton, biestableC: NSButton, biestableS: NSButton, biestableZ: NSButton)-> Array<String>{
+    var result = [String]()
+    if (biestableV.state == .on){
+        result.append("V")
+    }
+    if (biestableC.state == .on){
+        result.append("C")
+    }
+    if (biestableS.state == .on){
+        result.append("S")
+    }
+    if (biestableZ.state == .on){
+        result.append("Z")
+    }
+    return result
+}
+extension String {
+    typealias Byte = UInt8
+    var hexaToBytes: [Byte] {
+        var start = startIndex
+        return stride(from: 0, to: count, by: 2).compactMap { _ in   // use flatMap for older Swift versions
+            let end = index(after: start)
+            defer { start = index(after: end) }
+            return Byte(self[start...end], radix: 16)
         }
     }
+    var hexaToBinary: String {
+        return hexaToBytes.map {
+            let binary = String($0, radix: 2)
+            return repeatElement("0", count: 8-binary.count) + binary
+        }.joined()
+    }
+}
+extension StringProtocol {
+    subscript(_ offset: Int)                     -> Element     { self[index(startIndex, offsetBy: offset)] }
+    subscript(_ range: Range<Int>)               -> SubSequence { prefix(range.lowerBound+range.count).suffix(range.count) }
+    subscript(_ range: ClosedRange<Int>)         -> SubSequence { prefix(range.lowerBound+range.count).suffix(range.count) }
+    subscript(_ range: PartialRangeThrough<Int>) -> SubSequence { prefix(range.upperBound.advanced(by: 1)) }
+    subscript(_ range: PartialRangeUpTo<Int>)    -> SubSequence { prefix(range.upperBound) }
+    subscript(_ range: PartialRangeFrom<Int>)    -> SubSequence { suffix(Swift.max(0, count-range.lowerBound)) }
 }

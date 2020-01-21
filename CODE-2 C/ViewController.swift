@@ -16,10 +16,12 @@ class ViewController: NSViewController {
     var memoryHex = [String]()
     var sourceCodeExecuted = [Substring]()
     var direccionesCodeSourceMemoria = [String]()
+    var tempLastCounter = "0000"
     override func viewDidLoad() {
         super.viewDidLoad()
         allocateMemory()
         configTableViews()
+        tempLastCounter = programCounter.stringValue
         // Do any additional setup after loading the view.
         
     }
@@ -48,10 +50,35 @@ class ViewController: NSViewController {
         }
         return resultado;
     }
+    func getAliasRFromResponse(response: String)->String{
+        var resultado = ""
+       do {
+            let decoder = JSONDecoder()
+            let response = try decoder.decode(nullxScriptResponse.self, from: Data(response.utf8))
+            resultado = response.valor;
+        } catch let error {
+            print(error.localizedDescription)
+            print(response)
+            
+        }
+        return resultado;
+    }
     func inputValid(text: String) -> Bool{
         let hex = UInt(text, radix: 16) ?? nil
         if (hex != nil){
             return true
+        }else{
+            return false
+        }
+    }
+    func checkHex(text: String, format: Bool, leading: Int) -> Any{
+        let num = UInt(text, radix: 16) ?? nil
+        if (num != nil){
+            if (format){
+                return intToHex(num: Int(num!), leading: leading)
+            }else{
+                return true
+            }
         }else{
             return false
         }
@@ -152,7 +179,7 @@ class ViewController: NSViewController {
         }
         return result;
     }
-    func executeUserCode(indexUserCode: Int){
+    func executeUserCode(indexUserCode: Int, continuar: Bool){
         setProgramarRegistro(new: "Debug-> User code")
         let index: IndexSet = [indexUserCode]
         self.fileInstructions.selectRowIndexes(index, byExtendingSelection: false)
@@ -169,7 +196,7 @@ class ViewController: NSViewController {
               op2 = sourceCodeExecuted[self.fileInstructions.selectedRow].components(separatedBy: ", ")[1]
               op3 = sourceCodeExecuted[self.fileInstructions.selectedRow].components(separatedBy: ", ")[2]
              print(programCounter, nem, op1, op2, op3)
-             ejecutarInstruccion(PC: programCounter, nem: nem, op1: op1, op2: op2, op3: op3)
+             ejecutarInstruccion(PC: programCounter, nem: nem, op1: op1, op2: op2, op3: op3, continuar: continuar)
              setProgramarRegistro(new: "Ejecutado \(nem) \(op1) \(op2) \(op3) <--- instrucción \(programCounter)")
 
           }else{
@@ -177,16 +204,71 @@ class ViewController: NSViewController {
              let op1 = sourceCodeExecuted[self.fileInstructions.selectedRow].components(separatedBy: ", ")[0].components(separatedBy: " ")[2]
              let op2 = sourceCodeExecuted[self.fileInstructions.selectedRow].components(separatedBy: ", ")[1]
              print(programCounter, nem, op1, op2, op3)
-             ejecutarInstruccion(PC: programCounter, nem: nem, op1: op1, op2: op2, op3: op3)
+             ejecutarInstruccion(PC: programCounter, nem: nem, op1: op1, op2: op2, op3: op3, continuar: continuar)
              setProgramarRegistro(new: "Ejecutado \(nem) \(op1) \(op2) \(op3) <--- instrucción \(programCounter)")
 
           }
     }
-    func ejecutarInstruccion(PC: String, nem: String, op1: String, op2: String, op3: String){
-        faseCaptacion(PC: PC)
+    func executeMemoryCode(continuar: Bool, valorMemoria: String){
+        //let valorMemoria = getValueFromResponse(response: String(cString: getR(Int32(19))))
+        let pos = search(something: valorMemoria, ina: listaPosiciones)
+        if (pos == -1){
+            alert(title: "Error", msg: "La dirección de memoria no existe en CODE-2")
+            return
+        }
+        let valorMemoria_1 = memoryHex[pos]
+        
+        let nemINDec = Int(String(valorMemoria_1[0]), radix: 16)!
+        var nem = instruccionesHex[nemINDec]
+        var op1 = ""
+        var op2 = ""
+        var op3 = ""
+        if (nem == "ADDS" || nem == "SUBS" || nem == "NAND"){
+            // vale para ads subs nand shl shr shra
+            op1 = "r" + String(valorMemoria_1[1])
+            op2 = "r" + String(valorMemoria_1[2])
+            op3 = "r" + String(valorMemoria_1[3])
+        }else if (nem == "LD"){
+            op1 = "r" + String(valorMemoria_1[1])
+            op2 = "[" + restCeros(text: String(valorMemoria_1[2]), numOfCeros: 2, biestableV: self.biestableV, biestableC: self.biestableC) + "]"
+        }else if (nem == "ST"){
+            op2 = "r" + String(valorMemoria_1[2])
+            op1 = "[" + restCeros(text: String(valorMemoria_1[1]), numOfCeros: 2, biestableV: self.biestableV, biestableC: self.biestableC) + "]"
+        }else if (nem == "LLI" || nem == "LHI"){
+            op1 = "r" + String(valorMemoria_1[1])
+            op2 = "H'" + restCeros(text: String(valorMemoria_1[2]) + String(valorMemoria_1[3]), numOfCeros: 2, biestableV: self.biestableV, biestableC: self.biestableC)
+        }else if (nem == "IN"){
+            op1 = "r" + String(valorMemoria_1[1])
+            op2 = "IP" + String(valorMemoria_1[2])
+        }else if (nem == "OUT"){
+            op1 = "r" + String(valorMemoria_1[1])
+            op2 = "OP" + String(valorMemoria_1[2])
+        }else if (nem == "SHL"){
+            op1 = "r" + String(valorMemoria_1[1])
+        }else if (nem == "SHR"){
+            op1 = "r" + String(valorMemoria_1[1])
+        }else if (nem == "SHRA"){
+            op1 = "r" + String(valorMemoria_1[1])
+        }else if (nem.contains("B")){
+            nem = nem.replacingOccurrences(of: "-", with: String(valorMemoria_1[1]))
+        }else if (nem.contains("CALL")){
+            nem = nem.replacingOccurrences(of: "-", with: String(valorMemoria_1[1]))
+            
+        }else if (nem.contains("RET")){
+            
+        }else if (nem.contains("HALT")){
+            
+        }
+        
+        ejecutarInstruccion(PC: getValueFromResponse(response: String(cString: getR(20))), nem: nem, op1: op1, op2: op2, op3: op3, continuar: continuar)
+        setProgramarRegistro(new: "Ejecutado \(nem) \(op1) \(op2) \(op3) mem(\(valorMemoria))")
+        
+    }
+    func ejecutarInstruccion(PC: String, nem: String, op1: String, op2: String, op3: String, continuar: Bool){
+        faseCaptacion(PC: PC, continuar: continuar)
         faseEjecucion(nem: nem, op1: op1, op2: op2, op3: op3)
     }
-    func faseCaptacion(PC: String){
+    func faseCaptacion(PC: String, continuar: Bool){
         // pasar el PC al AR
             //setteo el PC al valor del script
         PC.withCString { s1 in
@@ -221,21 +303,36 @@ class ViewController: NSViewController {
             setR(18, parsed)
             setupAllRegistros()
         }
+        if (continuar == true){ // si paso a paso encendido, solo se aumenta en 1 cuando se presiona sobre continuar
+            let nextProgramCounter = sumar1Hex(hex: tempLastCounter)
+            
+            nextProgramCounter.withCString { s1 in
+                let parsed = UnsafeMutablePointer<Int8>(mutating: (nextProgramCounter as NSString).utf8String)
+                setR(19, parsed)
+                setR(16, parsed)
+                setupAllRegistros()
+            }
+
+            tempLastCounter = nextProgramCounter
+        }else{
+            let nextProgramCounter = sumar1Hex(hex: getValueFromResponse(response: String(cString: getR(20))))
+            
+            nextProgramCounter.withCString { s1 in
+                let parsed = UnsafeMutablePointer<Int8>(mutating: (nextProgramCounter as NSString).utf8String)
+                setR(19, parsed)
+                setupAllRegistros()
+            }
+            // en la practica hay que usar esto
+            let nextAddressRegister = nextProgramCounter
+            nextAddressRegister.withCString { s1 in
+                let parsed = UnsafeMutablePointer<Int8>(mutating: (nextAddressRegister as NSString).utf8String)
+                setR(16, parsed)
+                setupAllRegistros()
+            }
+            tempLastCounter = nextProgramCounter
+        }
         // aumentar el PC en 1
-        let nextProgramCounter = sumar1Hex(hex: self.programCounter.stringValue)
         
-        nextProgramCounter.withCString { s1 in
-            let parsed = UnsafeMutablePointer<Int8>(mutating: (nextProgramCounter as NSString).utf8String)
-            setR(19, parsed)
-            setupAllRegistros()
-        }
-        // en la practica hay que usar esto
-        let nextAddressRegister = sumar1Hex(hex: self.AdressRegister.stringValue)
-        nextAddressRegister.withCString { s1 in
-            let parsed = UnsafeMutablePointer<Int8>(mutating: (nextAddressRegister as NSString).utf8String)
-            setR(16, parsed)
-            setupAllRegistros()
-        }
     }
     func faseEjecucion(nem: String, op1: String, op2: String, op3: String){
             //OPERADORES NECESARIOS MAX 3 EN  ADDS, SUBS y NAND
@@ -245,7 +342,7 @@ class ViewController: NSViewController {
                 //registro destino op1
                 //v es op2
                 let v = op2.replacingOccurrences(of: "[H'", with: "").replacingOccurrences(of: "]", with: "")
-                let posicionMemoriaABuscar = sumarFromHex(sum1: regD.stringValue, sum2: v)
+                let posicionMemoriaABuscar = sumarFromHex(sum1: getRegistro(registro: "rD"), sum2: v)
                 let indexOfMemoria = search(something: posicionMemoriaABuscar, ina: listaPosiciones)
                 if (indexOfMemoria == -1){
                     alert(title: "Error", msg: "La dirección de memoria no existe en CODE-2")
@@ -258,14 +355,14 @@ class ViewController: NSViewController {
                 resetBiestables()
                 //almacenar
                 let v = op1.replacingOccurrences(of: "[H'", with: "").replacingOccurrences(of: "]", with: "")
-                let posicionMemoriaABuscar = sumarFromHex(sum1: regD.stringValue, sum2: v)
+                let posicionMemoriaABuscar = sumarFromHex(sum1: getRegistro(registro: "rD"), sum2: v)
                 let indexOfMemoria = search(something: posicionMemoriaABuscar, ina: listaPosiciones)
                 if (indexOfMemoria == -1){
                     alert(title: "Error", msg: "La dirección de memoria no existe en CODE-2")
                     return
                 }
-                memoryHex[indexOfMemoria] = String(cString: getR(Int32(op2)!))
-                listaMemoriavalores[indexOfMemoria] = hexStringtoAscii(hexString: String(cString: getR(Int32(op2)!)))
+                memoryHex[indexOfMemoria] = getRegistro(registro: op2)
+                listaMemoriavalores[indexOfMemoria] = hexStringtoAscii(hexString: getRegistro(registro: op2))
                 // falta meterlo con setMem
                 memoriaTableView.reloadData()
             }else if (nem == "LLI"){
@@ -281,17 +378,18 @@ class ViewController: NSViewController {
                 controlBiestables(val: resultado)
     */
                 let hexASumar = op2.replacingOccurrences(of: "H'", with: "")
-                let hexASumarC = String(format: "%02X", hexASumar)
+                let hexASumarC = checkHex(text: hexASumar, format: true, leading: 2) as! String
                 let antes = "00"
                 let despues = hexASumarC
                 let resultado = antes + despues
+                
                 setRegistro(registro: op1, value: String(resultado))
-            }/*else if (nem == "LHI"){
+            }else if (nem == "LHI"){
                 resetBiestables()
                 //carga inmediata alta
                 let valorDelRegistro = getRegistro(registro: op1) //coger valor del registro
                 let hexASumar = op2.replacingOccurrences(of: "H'", with: "")
-                let hexASumarC = restCeros(text: limitString(forS: hexASumar, limit: 2, asc: false), numOfCeros: 2)
+                let hexASumarC = checkHex(text: hexASumar, format: true, leading: 2) as! String
                 let antes = valorDelRegistro.suffix(2)
                 let despues = hexASumarC
                 let resultado = despues + antes
@@ -305,7 +403,7 @@ class ViewController: NSViewController {
                 
                 let n = op2.replacingOccurrences(of: "IP", with: "")
                 if (Int(n) ?? 65 > 64){
-                    dialogOKCancel(question: "Error", text: "Code-2 soporta los 64 primeros puertos de entrada.")
+                    alert(title: "Error", msg: "Code-2 soporta los 64 primeros puertos de entrada.")
                     return
                 }
                 if (n == "1"){
@@ -350,8 +448,8 @@ class ViewController: NSViewController {
                 let op2_0 = getRegistro(registro: op3)
                 let op1_1 = op1_0.hexaToBinary
                 let op2_1 = op2_0.hexaToBinary
-                let op1_2 = restCeros(text: op1_1, numOfCeros: 16)
-                let op2_2 = restCeros(text: op2_1, numOfCeros: 16)
+                let op1_2 = restCeros(text: op1_1, numOfCeros: 16, biestableV: self.biestableV, biestableC: self.biestableC)
+                let op2_2 = restCeros(text: op2_1, numOfCeros: 16, biestableV: self.biestableV, biestableC: self.biestableC)
 
                 //op1 donde se guarda el resultado
                 var res = ""
@@ -366,7 +464,7 @@ class ViewController: NSViewController {
             
                 
                 }
-                let value = limitString(forS: binToHex(res) ?? "0000", limit: 4, asc: false)
+                let value = checkHex(text: binToHex(bin: res), format: true, leading: 4) as! String
                 setRegistro(registro: op1, value: value)
                 controlBiestables(val: value, acarreo: "")
             }else if (nem == "SHL"){
@@ -377,8 +475,8 @@ class ViewController: NSViewController {
                 opABin.remove(at: opABin.firstIndex(of: opABin[0])!)
                 let meterCero = String(opABin) + "0"
                // let restoCeros = restCeros(text: meterCero, numOfCeros: 16)
-                let finalHex = binToHex(meterCero) ?? "0000"
-                let finalHexC = restCeros(text: finalHex, numOfCeros: 4)
+                let finalHex = binToHex(bin: meterCero)
+                let finalHexC = restCeros(text: finalHex, numOfCeros: 4, biestableV: self.biestableV ,biestableC: self.biestableC)
                 let acarreo = finalHexC[0] // para el acarreo luego -- sin settear
                 // biestableC.state = .on // siempre hya acarreo
                 
@@ -392,8 +490,8 @@ class ViewController: NSViewController {
                 opABin.remove(at: opABin.lastIndex(of: opABin.last!)!)
                 let meterCero = "0" + String(opABin)
                // let restoCeros = restCeros(text: meterCero, numOfCeros: 16)
-                let finalHex = binToHex(meterCero) ?? "0000"
-                let finalHexC = restCeros(text: finalHex, numOfCeros: 4)
+                let finalHex = binToHex(bin: meterCero)
+                let finalHexC = restCeros(text: finalHex, numOfCeros: 4, biestableV: self.biestableV, biestableC: self.biestableC)
                 let acarreo = opABin.last! // para el acarreo luego -- sin settear
                 // biestableC.state = .on // siempre hya acarreo
                 
@@ -408,8 +506,8 @@ class ViewController: NSViewController {
                 opABin.remove(at: opABin.lastIndex(of: opABin.last!)!)
                 let meterCero = String(primero) + String(opABin)
                // let restoCeros = restCeros(text: meterCero, numOfCeros: 16)
-                let finalHex = binToHex(meterCero) ?? "0000"
-                let finalHexC = restCeros(text: finalHex, numOfCeros: 4)
+                let finalHex = binToHex(bin: meterCero)
+                let finalHexC = restCeros(text: finalHex, numOfCeros: 4, biestableV: self.biestableV, biestableC: self.biestableC)
                 let acarreo = opABin.last! // para el acarreo luego -- sin settear
                 // biestableC.state = .on // siempre hya acarreo
                 
@@ -417,21 +515,28 @@ class ViewController: NSViewController {
                 controlBiestables(val: finalHexC, acarreo: String(acarreo))
             }else if (nem.contains("B")){
                 // no ignorar bidestables
-                let bi = getBiActivated()
+                let bi = getBiActivated(biestableV: self.biestableV, biestableC: self.biestableC, biestableS: self.biestableS, biestableZ: self.biestableZ)
                 let op1_1 = nem.components(separatedBy: "B")[1]
                 if (op1_1 == "R"){
                     // no se resetean los biestables (CREO)
                     // SALTO INCONDICIONAL
                     //SALTAR
-                    programCounter.stringValue = getRegistro(registro: "rD")
-                    
+                    let rD = getRegistro(registro: "rD")
+                    rD.withCString { s1 in
+                    let parsed = UnsafeMutablePointer<Int8>(mutating: (rD as NSString).utf8String)
+                        setR(19, parsed)
+                    }
                 }else if (op1_1 == "Z"){
                     // SALTO SI ES CERO
                     if (bi.contains("Z")){// COMPROBAR SI BI Z ACTIVADO
                         // no se resetean los biestables (CREO)
                         //ACTIVADO
                         //SALTAR
-                        programCounter.stringValue = getRegistro(registro: "rD")
+                        let rD = getRegistro(registro: "rD")
+                        rD.withCString { s1 in
+                        let parsed = UnsafeMutablePointer<Int8>(mutating: (rD as NSString).utf8String)
+                            setR(19, parsed)
+                        }
                     }
                 }else if (op1_1 == "S"){
                     // SALTO SI ES NEGATIVO
@@ -439,7 +544,11 @@ class ViewController: NSViewController {
                         // no se resetean los biestables (CREO)
                         //ACTIVADO
                         //SALTAR
-                        programCounter.stringValue = getRegistro(registro: "rD")
+                        let rD = getRegistro(registro: "rD")
+                        rD.withCString { s1 in
+                        let parsed = UnsafeMutablePointer<Int8>(mutating: (rD as NSString).utf8String)
+                            setR(19, parsed)
+                        }
                     }
                 }else if (op1_1 == "V"){
                     // SALTO SI ES OVERFLOW
@@ -447,7 +556,11 @@ class ViewController: NSViewController {
                         // no se resetean los biestables (CREO)
                         //ACTIVADO
                         //SALTAR
-                        programCounter.stringValue = getRegistro(registro: "rD")
+                        let rD = getRegistro(registro: "rD")
+                        rD.withCString { s1 in
+                        let parsed = UnsafeMutablePointer<Int8>(mutating: (rD as NSString).utf8String)
+                            setR(19, parsed)
+                        }
                     }
                 }else if (op1_1 == "C"){
                     // SALTO SI HAY ACARREO
@@ -455,20 +568,28 @@ class ViewController: NSViewController {
                         // no se resetean los biestables (CREO)
                         //ACTIVADO
                         //SALTAR
-                        programCounter.stringValue = getRegistro(registro: "rD")
+                        let rD = getRegistro(registro: "rD")
+                        rD.withCString { s1 in
+                        let parsed = UnsafeMutablePointer<Int8>(mutating: (rD as NSString).utf8String)
+                            setR(19, parsed)
+                        }
                     }
                 }
                 // SALTO
             }else if (nem.contains("CALL")){
                 // SUBRUTINA
-                let bi = getBiActivated()
+                let bi = getBiActivated(biestableV: self.biestableV, biestableC: self.biestableC, biestableS: self.biestableS, biestableZ: self.biestableZ)
                   let op1_1 = nem.components(separatedBy: "CALL")[1]
                   if (op1_1 == "R"){
                       // no se resetean los biestables (CREO)
                       // SALTO INCONDICIONAL
                       //SALTAR
                       insertMemoriaPila(programCounter.stringValue) // PC -> PILA
-                      programCounter.stringValue = getRegistro(registro: "rD")
+                      let rD = getRegistro(registro: "rD")
+                      rD.withCString { s1 in
+                      let parsed = UnsafeMutablePointer<Int8>(mutating: (rD as NSString).utf8String)
+                          setR(19, parsed)
+                      }
                   }else if (op1_1 == "Z"){
                       // SALTO SI ES CERO
                       if (bi.contains("Z")){// COMPROBAR SI BI Z ACTIVADO
@@ -476,7 +597,11 @@ class ViewController: NSViewController {
                           //ACTIVADO
                           //SALTAR
                           insertMemoriaPila(programCounter.stringValue) // PC -> PILA
-                          programCounter.stringValue = getRegistro(registro: "rD")
+                          let rD = getRegistro(registro: "rD")
+                          rD.withCString { s1 in
+                          let parsed = UnsafeMutablePointer<Int8>(mutating: (rD as NSString).utf8String)
+                              setR(19, parsed)
+                          }
                         
                     }
                   }else if (op1_1 == "S"){
@@ -486,7 +611,11 @@ class ViewController: NSViewController {
                           //ACTIVADO
                           //SALTAR
                           insertMemoriaPila(programCounter.stringValue) // PC -> PILA
-                          programCounter.stringValue = getRegistro(registro: "rD")
+                          let rD = getRegistro(registro: "rD")
+                          rD.withCString { s1 in
+                          let parsed = UnsafeMutablePointer<Int8>(mutating: (rD as NSString).utf8String)
+                              setR(19, parsed)
+                          }
                         
                     }
                   }else if (op1_1 == "V"){
@@ -496,7 +625,11 @@ class ViewController: NSViewController {
                           //ACTIVADO
                           //SALTAR
                           insertMemoriaPila(programCounter.stringValue) // PC -> PILA
-                          programCounter.stringValue = getRegistro(registro: "rD")
+                          let rD = getRegistro(registro: "rD")
+                          rD.withCString { s1 in
+                          let parsed = UnsafeMutablePointer<Int8>(mutating: (rD as NSString).utf8String)
+                              setR(19, parsed)
+                          }
                         
                     }
                   }else if (op1_1 == "C"){
@@ -506,22 +639,39 @@ class ViewController: NSViewController {
                           //ACTIVADO
                           //SALTAR
                           insertMemoriaPila(programCounter.stringValue) // PC -> PILA
-                          programCounter.stringValue = getRegistro(registro: "rD")
+                          let rD = getRegistro(registro: "rD")
+                          rD.withCString { s1 in
+                          let parsed = UnsafeMutablePointer<Int8>(mutating: (rD as NSString).utf8String)
+                              setR(19, parsed)
+                          }
                         
                     }
                   }
 
             }else if (nem.contains("RET")){
                 //RETORNO
-                programCounter.stringValue = getLastMemoriaPila()
+                let lastMPila = getLastMemoriaPila()
+                lastMPila.withCString { s1 in
+                let parsed = UnsafeMutablePointer<Int8>(mutating: (lastMPila as NSString).utf8String)
+                    setR(19, parsed)
+                }
             }else if (nem == "HALT"){
                 //PARAR
                 alert(title: "Info", msg: "Fin de la ejecución.")
                 
                 return
-            }*/
+            }
             
         }
+    func controlBiestables(val: String, acarreo: String){ // revisar esta funcion!!!
+        let conv = UInt(val, radix: 16) ?? 999
+        if (conv == 0){
+            biestableZ.state = .on
+        }
+        if (acarreo.count > 0){
+            biestableC.state = .on
+        }
+    }
     func setRegistro(registro: String, value: String){
         let registroCh = registro.lowercased()
         value.withCString { s1 in
@@ -561,7 +711,18 @@ class ViewController: NSViewController {
             }
             setupAllRegistros()
         }
-        
+    }
+    func getRegistro(registro: String)->String{
+        let registroCh = registro.lowercased()
+        var toReturn = ""
+        let registros = [
+            "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "ra", "rb", "rc", "rd", "re", "rf"
+        ]
+        let index = registros.firstIndex(of: registroCh)
+        if (index != nil){
+            toReturn = getValueFromResponse(response: String(cString: getR(Int32(index!))))
+        }
+        return toReturn
     }
     func resetBiestables(){
         biestableC.state = .off
@@ -849,12 +1010,23 @@ class ViewController: NSViewController {
         let indexUserCode = isDirectionInUserCode(direction: getValueFromResponse(response: String(cString: getR(23))))
         if (indexUserCode != -1){
             // ejecutar codigo usuario
-            executeUserCode(indexUserCode: indexUserCode)
+            executeUserCode(indexUserCode: indexUserCode, continuar: false)
         }else{
             // ejecutar codigo memoria
+            executeMemoryCode(continuar: false, valorMemoria: tempLastCounter)
         }
     }
     @IBAction func botonContinuar(_ sender: NSButton) {
+         
+        let tempCounter = sumarFromHex(sum1: getValueFromResponse(response: String(cString: getR(23))), sum2: "0001")
+        let indexUserCode = isDirectionInUserCode(direction: tempCounter)
+               if (indexUserCode != -1){
+                   // ejecutar codigo usuario
+                   executeUserCode(indexUserCode: indexUserCode, continuar: true)
+               }else{
+                   // ejecutar codigo memoria
+                   executeMemoryCode(continuar: true, valorMemoria: sumarFromHex(sum1: getValueFromResponse(response: String(cString: getR(19))), sum2: "0001"))
+               }
         }
     @IBAction func botonEncenderAccion(_ sender: NSButton) {
         if (encendido){
